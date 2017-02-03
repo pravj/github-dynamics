@@ -153,239 +153,183 @@
 
 	<script src="https://d3js.org/d3.v3.min.js"></script>
 	<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 
 	<script type="text/javascript">
-		var width = 960,
-    		height = 1300;
+		$(document).ready(function() {
+			// executes when HTML-Document is loaded and DOM is ready
+			var width = 960,
+    			height = 1300;
 
-    	d3.json('http://0.0.0.0:8000/chart_data.json', function(data) {
-    		var _nodes = data['nodes'];
-			var _links = data['links'];
-			var connected_links = data['connected_links'];
-			var connected_nodes = data['connected_nodes'];
+    		d3.json('http://0.0.0.0:8000/chart_data.json', function(data) {
+	    		var _nodes = data['nodes'],
+					_links = data['links'],
+					connected_links = data['connected_links'],
+					connected_nodes = data['connected_nodes'];
 
-    	var force = d3.layout.force()
-		    .nodes(d3.values(_nodes))
-		    .links(_links)
-		    .size([width, height])
-		    .linkDistance(60)
-		    .charge(-300)
-		    .on("tick", tick)
-		    .start();
+				var force = d3.layout.force()
+			    	.nodes(d3.values(_nodes))
+				    .links(_links)
+				    .size([width, height])
+				    .linkDistance(60)
+				    .charge(-300)
+				    .on("tick", tick)
+				    .start();
 
-    	var svg = d3.select(".chart").append("svg")
-    		.attr("width", width)
-    		.attr("height", height);
+				var svg = d3.select(".chart").append("svg")
+	    			.attr("width", width)
+	    			.attr("height", height);
 
-    	/*
-    	.offset(function (d) {
-		        if(d.name=='abhikandoi2000') { return [10,0] }
-		        else if(d.direction=='w') { return [0,-10] }
-		        else if(d.direction=='e') { return [0,10] }
-		        else { return [-10, 0]; }
-		      })
-		*/
+	    		var tips = {};
+				for (var i = 0; i < _nodes.length; i++) {
+					var tip = d3.tip()
+						.attr('class', 'd3-tip')
+						.attr('tip-node-name', _nodes[i].name)
+						.direction(function(d) {
+						  	if (d.name === 'abhikandoi2000' || d.name === 'ankurgarg101') {return 's';}
+						  	else if (d.name === 'cemoulto') {return 'w';}
+						  	else if (d.name === 'Krukov' || d.name === 'joke2k' || d.name === 'areski') {return 'e';}
+						  	else{return 'n';}
+					  	})
+					    .html(function(d) {
+					    	return "<span>"+ d.name +"</span>";
+					    });
 
-		/*
-		function(d) {
-			  	if (d.name === 'abhikandoi2000') {return 's';}
-			  	else if (d.name === 'cemoulto') {return 'w';}
-			  	else if (d.name === 'Krukov' || d.name === 'joke2k' || d.name === 'areski') {return 'e';}
-			  	else{return 'n';}
-			  }
-		*/
+						tips[_nodes[i].name] = tip;
+						svg.call(tips[_nodes[i].name]);
+				};
 
-    	var tips = {};
-		for (var i = 0; i < _nodes.length; i++) {
-			var tip = d3.tip()
-			  .attr('class', 'd3-tip')
-			  .attr('tip-node-name', _nodes[i].name)
-			  .direction(function(d) {
-			  	if (d.name === 'abhikandoi2000' || d.name === 'ankurgarg101') {return 's';}
-			  	else if (d.name === 'cemoulto') {return 'w';}
-			  	else if (d.name === 'Krukov' || d.name === 'joke2k' || d.name === 'areski') {return 'e';}
-			  	else{return 'n';}
-			  })
-			  .html(function(d) {
-			    return "<span>"+ d.name +"</span>";
-			  });
+				var link = svg.selectAll(".link")
+					.data(force.links())
+			  	  .enter().append("line")
+			    	.attr("class", "link")
+			    	.attr("link-index", function(d) {return d.link_index});
 
-			tips[_nodes[i].name] = tip;
-			svg.call(tips[_nodes[i].name]);
-		};
-		console.log(tips);
+			    var node = svg.selectAll(".node")
+			    	.data(force.nodes())
+			  	  .enter().append("g")
+				    .attr("class", "node dark")
+				    .on("mouseover", mouseover)
+				    .on("mouseout", mouseout);
+				    //.call(force.drag);
 
-    	var link = svg.selectAll(".link")
-			.data(force.links())
-		  .enter().append("line")
-		    .attr("class", "link")
-		    .attr("link-index", function(d) {return d.link_index});
+				node.append("circle")
+		    		.attr("r", function(d) {return d.radius;})
+		    		.attr("name", function(d) {return d.name;})
+		    		.on("mouseover", function(d) {tip.show(d);})
+		    		.on("mouseout", tip.hide);
 
-		var node = svg.selectAll(".node")
-		    .data(force.nodes())
-		  .enter().append("g")
-		    .attr("class", "node dark")
-		    .on("mouseover", mouseover)
-		    .on("mouseout", mouseout)
-		    //.call(force.drag);
+		    	svg.append("line")
+		            .attr("x1",  20)
+		            .attr("y1", 550)
+		            .attr("x2", width - 20)
+		            .attr("y2", 550)
+		            .style("stroke-width", "0.2px")
+		            .style("stroke", "#000");
 
-		node.append("circle")
-    		.attr("r", function(d) {return d.radius;})
-    		.attr("name", function(d) {return d.name;})
-    		.on("mouseover", function(d) {tip.show(d);})
-    		.on("mouseout", tip.hide);
+		        svg.append("text")
+			        .attr("x", (width / 2))             
+			        .attr("y", 20)
+			        .attr("text-anchor", "middle")  
+			        .style("font-size", "16px") 
+			        .text("Stargazers Network (\"pravj/Doga\")");
 
-    	svg.append("line")
-            .attr("x1",  20)
-            .attr("y1", 550)
-            .attr("x2", width - 20)
-            .attr("y2", 550)
-            .style("stroke-width", "0.2px")
-            .style("stroke", "#000");
+			    svg.append("text")
+			        .attr("x", 20)             
+			        .attr("y", 560)
+			        .attr("text-anchor", "left")  
+			        .style("font-size", "10px")
+			        .attr("transform", "translate(-530, 300) rotate(270)")
+			        .text("network distance from root (\"pravj\")");
 
-    	
-    	var axisData = data['axis'];
-    	//var colors = ['#DCDCDC', '#D3D3D3', '#C0C0C0', '#A9A9A9', '#808080', '#696969', '#778899', '#2F4F4F'];
-    	var colors = ["#E2E2E2", "#C6C6C6", '#AAAAAA', '#8D8D8D', '#717171', '#555555', '#383838', '#1C1C1C'];
+			    svg.append("text")
+			        .attr("x", 20)             
+			        .attr("y", 560)
+			        .attr("text-anchor", "left")  
+			        .style("font-size", "10px")
+			        .text("(time increases in a row, from left to right)");
 
-    	var colorBlockData = [];
-    	for (var i = 0; i < axisData.length - 1; i++) {
-    		colorBlockData.push({
-    			'x': axisData[i]['x'],
-    			'y': axisData[i]['y'],
-    			'height': axisData[i+1]['y'] - axisData[i]['y'],
-    			'color': colors[i]
-    		})
-    	};
+			    function tick() {
+				    link
+				        .attr("x1", function(d) { return d.source.x; })
+				        .attr("y1", function(d) { return d.source.y; })
+				        .attr("x2", function(d) { return d.target.x; })
+				        .attr("y2", function(d) { return d.target.y; });
 
-    	/*
-    	colorBlockData[0]['y'] -= 10
-    	colorBlockData[0]['height'] += 10
-    	colorBlockData[7]['height'] += 10
-    	*/
-    	//colorBlockData[7]['y'] += 10
+				    node
+				        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+				}
 
-    	var colorBlock = svg.selectAll(".color-block")
-    		.data(colorBlockData)
-    	  .enter().append("rect")
-    	    .attr("x", function(d) {return d.x;})
-    	    .attr("y", function(d) {return d.y;})
-    	    .attr("width", 30)
-    	    .attr("height", function(d) {return d.height;})
-    	    .style('fill', function(d) {return d.color;})
+				hovered_last = false;
 
-    	/*
-    	var axisMark = svg.selectAll(".axis-mark")
-    		.data(axisData)
-    	  .enter().append("text")
-    	    .attr("x", function(d) {return d.x;})
-    	    .attr("y", function(d) {return d.y;})
-    	    .text(function(d) {return d.value;})
-    	    .attr("font-family", "sans-serif")
-    	    .attr("font-weight", "bold")
-            .attr("font-size", "10px")
-            .attr("fill", "#213243")
-            .attr("display", "inline");
+				function mouseover() {
+			  		var _name = null;
 
-        svg.append("line")
-            .attr("x1",  10)
-            .attr("y1", axisData[0]['y'])
-            .attr("x2", 10)
-            .attr("y2", axisData[8]['y'])
-            .style("stroke", "#000");
-        */
+					d3.select(this).select("circle").transition()
+						.duration(750)
+					    .style("fill", "#aaa")
+					    .attr("r", function(d) {
+					    	_name = d.name;
+					    	return (3*d.radius)/2
+					    });
 
-    	/*
-		node.append("text")
-		    .attr("dy", "0.3em")
-		    .attr("text-anchor", "middle")
-		    .text(function(d) { return d.order; });
-		*/
+					var last_name = 'hoffigk';
+					if (_name === last_name) {hovered_last = true;console.log('hovered');}
 
-		function tick() {
-		  link
-		      .attr("x1", function(d) { return d.source.x; })
-		      .attr("y1", function(d) { return d.source.y; })
-		      .attr("x2", function(d) { return d.target.x; })
-		      .attr("y2", function(d) { return d.target.y; });
+				    _connected_links = connected_links[_name];
+				    for (var i = _connected_links.length - 1; i >= 0; i--) {
+				  	d3.select("[link-index='" + _connected_links[i] + "']").transition()
+				  	    .duration(500)
+				  	    .style('stroke', '#000');
+				    };
 
-		  node
-		      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
-		}
+			    	_connected_nodes = connected_nodes[_name];
+			    	for (var i = _connected_nodes.length - 1; i >= 0; i--) {
+			  			_node = _connected_nodes[i];
+			  			tips[_node].show({'name': _node}, d3.select("[name="+_node+"]").node())
+			    	};
 
-		hovered_last = false;
+			    	if (hovered_last && _name != last_name) {
+			  			console.log('already hovered, now in ' + _name + ' removing html');
+			  			d3.select("[tip-node-name="+ last_name +"]")
+			  				.classed("n", false)
+						  	.classed("s", false)
+						  	.classed("e", false)
+						  	.classed("w", false)
+						  	.style("opacity", 0)
+			    	};
+				}
 
-		function mouseover() {
-		  var _name = null;
-		  console.log(_name);
+				function mouseout() {
+			    	var _name = null;
 
-		  d3.select(this).select("circle").transition()
-		    .duration(750)
-		    .style("fill", "#aaa")
-		    .attr("r", function(d) {
-		    	_name = d.name;
-		    	console.log(_name);
-		    	return (3*d.radius)/2
-		    });
+			    	d3.select(this).select("circle").transition()
+			        	.duration(750)
+			        	.style("fill", "#ccc")
+			        	.attr("r", function(d) {
+			      			_name = d.name;
+			      			return d.radius;
+			      		});
 
-		  var last_name = 'hoffigk';
-		  if (_name === last_name) {hovered_last = true;console.log('hovered');}
+			    	d3.selectAll('.link').transition()
+			  	    	.duration(50)
+			  	    	.style('stroke', '#fff')
 
-		  _connected_links = connected_links[_name];
-		  for (var i = _connected_links.length - 1; i >= 0; i--) {
-		  	d3.select("[link-index='" + _connected_links[i] + "']").transition()
-		  	  .duration(500)
-		  	  .style('stroke', '#aaa');
-		  };
+			    	d3.selectAll(".d3-tip")
+			  	    	.classed("n", false)
+			  	    	.classed("s", false)
+			  	  		.classed("e", false)
+			  	  		.classed("w", false)
 
-		  _connected_nodes = connected_nodes[_name];
-		  for (var i = _connected_nodes.length - 1; i >= 0; i--) {
-		  	_node = _connected_nodes[i];
-		  	console.log(_node)
-		  	tips[_node].show({'name': _node}, d3.select("[name="+_node+"]").node())
-		  };
-
-		  if (hovered_last && _name != last_name) {
-		  	console.log('already hovered, now in ' + _name + ' removing html');
-		  	d3.select("[tip-node-name="+ last_name +"]")
-		  		.classed("n", false)
-			  	.classed("s", false)
-			  	.classed("e", false)
-			  	.classed("w", false)
-			  	.style("opacity", 0)
-		  };
-		  
-		}
-
-		function mouseout() {
-		  var _name = null;
-		  d3.select(this).select("circle").transition()
-		      .duration(750)
-		      .style("fill", "#ccc")
-		      .attr("r", function(d) {
-		      	_name = d.name;
-		      	return d.radius;});
-
-		  d3.selectAll('.link').transition()
-		  	  .duration(50)
-		  	  .style('stroke', '#fff')
-
-		  d3.selectAll(".d3-tip")
-		  	  .classed("n", false)
-		  	  .classed("s", false)
-		  	  .classed("e", false)
-		  	  .classed("w", false)
-
-		  
-		  _connected_nodes = connected_nodes[_name];
-		  for (var i = _connected_nodes.length - 1; i >= 0; i--) {
-		  	_node = _connected_nodes[i];
-		  	tips[_node].hide({'name': _node}, d3.select("[name="+_node+"]").node())
-		  };
-		}
-
+			  
+			  		_connected_nodes = connected_nodes[_name];
+			  		for (var i = _connected_nodes.length - 1; i >= 0; i--) {
+			  			_node = _connected_nodes[i];
+			  			tips[_node].hide({'name': _node}, d3.select("[name="+_node+"]").node())
+			  		};
+				}
+			});
 		});
-
 	</script>
 	<h1>sample heading<h1>
 </body>
