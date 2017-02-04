@@ -158,14 +158,83 @@
 	<script type="text/javascript">
 		$(document).ready(function() {
 			// executes when HTML-Document is loaded and DOM is ready
-			var width = 960,
-    			height = 1300;
+
+			var diffY = 40;
+
+			var gapeY = function(level) {
+    			if (level > 0) {return 200;} else{return 100;};
+    		}
+
+			// return y-axis position of a node attributes
+    		var positionY = function (level) {
+    			return gapeY(level) + (diffY * level);
+    		}
+
+			// collect the container dimension to make the D3 chart responsive
+			// var width = $('.container:nth-child(2)').width(),
+			var width = $('.chart').width(),
+				nodesEndY = positionY(8);
+    			height = nodesEndY + 100;
+
+    		console.log(width, height);
+
+    		// update the width according to the padding
+    		var leftPadding = 0;
+    			//width = width - leftPadding;
+
+    		// node diameters per level
+    		nodeDiameters = [1, 10, 10, 8, 6, 4, 8, 8, 8];
+
+    		// number of nodes per (effective) level
+    		totalNodes = {0: 1, 1: 34, 2: 10, 3: 1, 4: 1, 5: 139, 6: 29, 7: 9, 8: 5};
+
+    		// return x-axis position of a node attributes
+    		var positionX = function(level, index) {
+    			var g = undefined,
+					d = undefined,
+					D = nodeDiameters[level];
+
+				var numberNodes = totalNodes[level];
+				if (numberNodes == 1)
+					{
+						g = (width - D) / 2;
+						d = 0;
+					}
+				else
+					{
+						d = Math.floor((width - ((numberNodes + 2)*D))/(numberNodes - 1));
+						g = (((width - (numberNodes*D)) - (d*(numberNodes - 1))) / 2);
+					};
+
+				startX = leftPadding + g + (D/2);
+				return startX + (index*(D+d));
+    		}
 
     		d3.json('http://0.0.0.0:8000/chart_data.json', function(data) {
 	    		var _nodes = data['nodes'],
 					_links = data['links'],
 					connected_links = data['connected_links'],
 					connected_nodes = data['connected_nodes'];
+
+					console.log(_nodes);
+
+				for (var i = 0; i < _nodes.length; i++) {
+					var nodeLevel = _nodes[i]['distance'],
+						previousNodes = 0;
+
+					if (nodeLevel >= 1000) {
+						nodeLevel = (nodeLevel - 995);
+					}
+
+					for (var j = 0; j < nodeLevel; j++) {
+						previousNodes = previousNodes + totalNodes[j];
+					};
+
+					var nodeIndex = i - previousNodes;
+
+					_nodes[i]['x'] = positionX(nodeLevel, nodeIndex);
+					_nodes[i]['y'] = positionY(nodeLevel);
+				};
 
 				var force = d3.layout.force()
 			    	.nodes(d3.values(_nodes))
@@ -216,14 +285,15 @@
 				node.append("circle")
 		    		.attr("r", function(d) {return d.radius;})
 		    		.attr("name", function(d) {return d.name;})
+		    		.style("fill", function(d) {if (d.order == 0) {return "#ff4500";} else if (d.order <= 16 && d.order > 0) {return "#565656";} else{return "#ccc";};})
 		    		.on("mouseover", function(d) {tip.show(d);})
 		    		.on("mouseout", tip.hide);
 
 		    	svg.append("line")
 		            .attr("x1",  20)
-		            .attr("y1", 550)
+		            .attr("y1", nodesEndY + 30)
 		            .attr("x2", width - 20)
-		            .attr("y2", 550)
+		            .attr("y2", nodesEndY + 30)
 		            .style("stroke-width", "0.2px")
 		            .style("stroke", "#000");
 
@@ -232,8 +302,10 @@
 			        .attr("y", 20)
 			        .attr("text-anchor", "middle")  
 			        .style("font-size", "16px") 
-			        .text("Stargazers Network (\"pravj/Doga\")");
+			        .text("Stargazers Network (\"pravj/Doga\")")
+			        //.href("https://github.com/pravj/Doga");
 
+			    /*
 			    svg.append("text")
 			        .attr("x", 20)             
 			        .attr("y", 560)
@@ -241,13 +313,58 @@
 			        .style("font-size", "10px")
 			        .attr("transform", "translate(-530, 300) rotate(270)")
 			        .text("network distance from root (\"pravj\")");
+			    */
 
 			    svg.append("text")
 			        .attr("x", 20)             
-			        .attr("y", 560)
+			        .attr("y", nodesEndY + 40)
 			        .attr("text-anchor", "left")  
 			        .style("font-size", "10px")
 			        .text("(time increases in a row, from left to right)");
+
+			    /*
+			    legend
+			    > type of node
+			    */
+
+			    svg.append("circle")
+			    	.attr("cx", 40)
+			    	.attr("cy", 50)
+			    	.attr("r", 10)
+			    	.style("fill", "#ff4500");
+
+			    svg.append("circle")
+			    	.attr("cx", 40)
+			    	.attr("cy", 80)
+			    	.attr("r", 10)
+			    	.style("fill", "#565656");
+
+			    svg.append("circle")
+			    	.attr("cx", 40)
+			    	.attr("cy", 110)
+			    	.attr("r", 10)
+			    	.style("fill", "#cccccc");
+
+			    svg.append("text")
+			        .attr("x", 60)             
+			        .attr("y", 55)
+			        .attr("text-anchor", "left")  
+			        .style("font-size", "10px")
+			        .text("Repository creator");
+
+			    svg.append("text")
+			        .attr("x", 60)             
+			        .attr("y", 85)
+			        .attr("text-anchor", "left")  
+			        .style("font-size", "10px")
+			        .text("Stargazers before the Hacker News submission");
+
+			    svg.append("text")
+			        .attr("x", 60)             
+			        .attr("y", 115)
+			        .attr("text-anchor", "left")  
+			        .style("font-size", "10px")
+			        .text("Stargazers after the Hacker News submission");
 
 			    function tick() {
 				    link
@@ -267,7 +384,7 @@
 
 					d3.select(this).select("circle").transition()
 						.duration(750)
-					    .style("fill", "#aaa")
+						.style("fill", function(d) {if (d.order == 0) {return "#ffa500";} else if (d.order <= 16 && d.order > 0) {return "#656565";} else{return "#aaa";};})
 					    .attr("r", function(d) {
 					    	_name = d.name;
 					    	return (3*d.radius)/2
@@ -286,7 +403,14 @@
 			    	_connected_nodes = connected_nodes[_name];
 			    	for (var i = _connected_nodes.length - 1; i >= 0; i--) {
 			  			_node = _connected_nodes[i];
-			  			tips[_node].show({'name': _node}, d3.select("[name="+_node+"]").node())
+			  			tips[_node].show({'name': _node}, d3.select("[name="+_node+"]").node());
+
+			  			d3.select("[name="+_node+"]").transition()
+							.duration(750)
+							.style("fill", function(d) {if (d.order == 0) {return "#ffa500";} else if (d.order <= 16 && d.order > 0) {return "#656565";} else{return "#aaa";};})
+						    .attr("r", function(d) {
+						    	return (3*d.radius)/2
+						    });
 			    	};
 
 			    	if (hovered_last && _name != last_name) {
@@ -305,7 +429,7 @@
 
 			    	d3.select(this).select("circle").transition()
 			        	.duration(750)
-			        	.style("fill", "#ccc")
+			        	.style("fill", function(d) {if (d.order == 0) {return "#ff4500";} else if (d.order <= 16 && d.order > 0) {return "#565656";} else{return "#ccc";};})
 			        	.attr("r", function(d) {
 			      			_name = d.name;
 			      			return d.radius;
@@ -325,7 +449,14 @@
 			  		_connected_nodes = connected_nodes[_name];
 			  		for (var i = _connected_nodes.length - 1; i >= 0; i--) {
 			  			_node = _connected_nodes[i];
-			  			tips[_node].hide({'name': _node}, d3.select("[name="+_node+"]").node())
+			  			tips[_node].hide({'name': _node}, d3.select("[name="+_node+"]").node());
+
+			  			d3.select("[name="+_node+"]").transition()
+				        	.duration(750)
+				        	.style("fill", function(d) {if (d.order == 0) {return "#ff4500";} else if (d.order <= 16 && d.order > 0) {return "#565656";} else{return "#ccc";};})
+				        	.attr("r", function(d) {
+				      			return d.radius;
+				      		});
 			  		};
 				}
 			});
