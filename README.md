@@ -20,7 +20,7 @@ The code is not properly structured for now, I'm doing it as I push more data an
 
 ### Collaboration Spam on GitHub (2014 - Jun 2016)
 
-![[Collaboration Spam on GitHub (2014 - Jun 2016)](https://pravj.github.io/blog/information-dynamics-on-github)](https://plot.ly/~octogrid/145.png)
+![[Collaboration Spam on GitHub (2014 - Jun 2016)](https://pravj.github.io/blog/information-dynamics-on-github)](https://plot.ly/~octogrid/153.png)
 
 ### Collaboration Spam Timeline and the success of 'repository invitations'
 
